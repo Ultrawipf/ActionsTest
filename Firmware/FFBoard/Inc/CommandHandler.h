@@ -37,7 +37,7 @@ enum class CMDtype : uint32_t{
 };
 
 enum class CommandStatus : uint8_t {NOT_FOUND,OK,ERR,NO_REPLY,BROADCAST};
-enum class CommandReplyType : uint8_t {NONE,ACK,INT,STRING,STRING_OR_INT,STRING_OR_DOUBLEINT,DOUBLEINTS};
+enum class CommandReplyType : uint8_t {NONE,ACK,INT,STRING,STRING_OR_INT,STRING_OR_DOUBLEINT,DOUBLEINTS,ERR};
 
 class CommandInterface;
 class CommandHandler; // defined lower
@@ -55,7 +55,7 @@ struct CmdHandlerInfo
 	const char* clsname = nullptr;
 	const uint16_t clsTypeid;
 	uint8_t instance;
-	uint16_t commandHandlerID = 1;
+	uint16_t commandHandlerID = 0;
 };
 
 
@@ -113,9 +113,10 @@ enum class CommandHandlerCommands : uint32_t{
  */
 class CommandHandler {
 public:
-	static std::vector<CommandHandler*> cmdHandlers; //!< List of all registered command handlers to be called on commands
-	static std::set<uint16_t> cmdHandlerIDs; //!< Reserves dynamic unique IDs to keep track of command handlers
-	static cpp_freertos::MutexStandard cmdHandlerListMutex;
+	//static std::vector<CommandHandler*> cmdHandlers; //!< List of all registered command handlers to be called on commands
+	//static std::set<uint16_t> cmdHandlerIDs; //!< Reserves dynamic unique IDs to keep track of command handlers
+	//static cpp_freertos::MutexStandard cmdHandlerListMutex;
+	//static std::vector<uint16_t> cmdHandlerIDs;
 	/**
 	 * Type of this class. Mainclass, motordriver...
 	 * Should be implemented by the parent class so it is not in the info struct
@@ -146,7 +147,7 @@ public:
 	static bool logsEnabled();
 	static void setLogsEnabled(bool enabled);
 	virtual uint16_t getCommandHandlerID(){return this->cmdHandlerInfo.commandHandlerID;}
-	virtual uint16_t getSelectionID(){return this->getInfo().id;} //!< normally returns class id but for choosable classes this can be the id used to create the class
+	//virtual uint16_t getSelectionID(){return this->getInfo().id;} //!< normally returns class id but for choosable classes this can be the id used to create the class
 
 	virtual CmdHandlerInfo* getCommandHandlerInfo();
 
@@ -169,11 +170,22 @@ public:
 	virtual CmdHandlerCommanddef* getCommandFromName(const std::string& cmd,uint32_t ignoredFlags=0);
 	virtual CmdHandlerCommanddef* getCommandFromId(const uint32_t id,uint32_t ignoredFlags=0);
 
+
+	static inline std::vector<CommandHandler*>& getCommandHandlers() {
+		static std::vector<CommandHandler*> commandhandlers{};
+		return commandhandlers;
+	}
+
 protected:
 	void setInstance(uint8_t instance);
 	bool commandsEnabled = true;
 	virtual void addCommandHandler();
 	virtual void removeCommandHandler();
+
+	static inline std::vector<uint16_t>& getCommandHandlerIds() {
+		static std::vector<uint16_t> commandhandlerids{};
+		return commandhandlerids;
+	}
 
 
 	/**

@@ -29,7 +29,7 @@ cpp_freertos::BinarySemaphore FFBoardMainCommandThread::threadSem = cpp_freertos
 
 
 // Note: allocate enough memory for the command thread to store replies
-FFBoardMainCommandThread::FFBoardMainCommandThread(FFBoardMain* mainclass) : Thread("cmdparser",1024, 35) {
+FFBoardMainCommandThread::FFBoardMainCommandThread(FFBoardMain* mainclass) : Thread("CMD_MAIN",700, 35) {
 	//main = mainclass;
 	this->Start();
 }
@@ -39,25 +39,22 @@ FFBoardMainCommandThread::~FFBoardMainCommandThread() {
 }
 
 
-void FFBoardMainCommandThread::updateSys(){
-
-	// Ask command interfaces if new commands are available if woken up
-	for(CommandInterface* itf : CommandInterface::cmdInterfaces){
-		if(itf->hasNewCommands()){
-			itf->getNewCommands(commands);
-			this->executeCommands(commands, itf);
-			commands.clear();
-			if(commands.capacity() > 20)
-				commands.shrink_to_fit();
-		}
-	}
-
-	FFBoardMainCommandThread::threadSem.Take(); // Stop thread again. will be resumed when parser ready
-}
 
 void FFBoardMainCommandThread::Run(){
 	while(true){
-		updateSys();
+		// Ask command interfaces if new commands are available if woken up
+		for(CommandInterface* itf : CommandInterface::cmdInterfaces){
+			if(itf->hasNewCommands()){
+				itf->getNewCommands(commands);
+				this->executeCommands(commands, itf);
+				commands.clear();
+				if(commands.capacity() > 20)
+					commands.shrink_to_fit();
+			}
+		}
+
+		FFBoardMainCommandThread::threadSem.Take(); // Stop thread again. will be resumed when parser ready
+
 		Delay(1); // Give the scheduler time
 	}
 }

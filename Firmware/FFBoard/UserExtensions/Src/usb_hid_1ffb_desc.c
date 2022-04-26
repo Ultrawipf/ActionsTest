@@ -1,5 +1,5 @@
 /*
- * usb_hid_ffb_desc.c
+ * usb_hid_1ffb_desc.c
  *
  *  Created on: 22.02.2021
  *      Author: Yannick
@@ -9,7 +9,9 @@
 #include "ffb_defs.h"
 #include "usb_hid_ffb_desc.h"
 
-__ALIGN_BEGIN const uint8_t hid_ffb_desc[USB_HID_FFB_REPORT_DESC_SIZE] __ALIGN_END =
+#ifdef AXIS1_FFB_HID_DESC
+
+__ALIGN_BEGIN const uint8_t hid_1ffb_desc[USB_HID_1FFB_REPORT_DESC_SIZE] __ALIGN_END =
 {
 		   0x05, 0x01,                    // USAGE_PAGE (Generic Desktop)
 		    0x09, 0x04,                    // USAGE (Joystick)
@@ -18,7 +20,7 @@ __ALIGN_BEGIN const uint8_t hid_ffb_desc[USB_HID_FFB_REPORT_DESC_SIZE] __ALIGN_E
 		    0x85, 0x01,                    //     REPORT_ID (1)
 		    0x05, 0x09,                    //     USAGE_PAGE (Button)
 		    0x19, 0x01,                    //     USAGE_MINIMUM (Button 1)
-		    0x29, 0x20,                    //     USAGE_MAXIMUM (Button 32)
+		    0x29, 0x40,                    //     USAGE_MAXIMUM (Button 64)
 		    0x15, 0x00,                    //     LOGICAL_MINIMUM (0)
 		    0x25, 0x01,                    //     LOGICAL_MAXIMUM (1)
 		    0x95, 0x40,                    //     REPORT_COUNT (64)
@@ -45,62 +47,7 @@ __ALIGN_BEGIN const uint8_t hid_ffb_desc[USB_HID_FFB_REPORT_DESC_SIZE] __ALIGN_E
 			0x06, 0x00, 0xFF,                    // USAGE_PAGE (Vendor)
 			0x09, 0x00,                    //   USAGE (Vendor)
 			0xA1, 0x01, // Collection (Application)
-//				0x85,HID_ID_CUSTOMCMD, //    Report ID
-//				0x09, 0x01,                    //   USAGE (Vendor) type
-//				0x15, 0x00,                    //   LOGICAL_MINIMUM (0)
-//				0x26, 0x04,	0x00,			   //   Logical Maximum 4
-//				0x75, 0x08,                    //   REPORT_SIZE (8)
-//				0x95, 0x01,                    //   REPORT_COUNT (1)
-//				0xb1, 0x02,                    //   FEATURE (Data,Var,Abs)
-//
-//				0x09, 0x02,                    //   USAGE (Vendor) cmd
-//				0x09, 0x03,                    //   USAGE (Vendor) addr
-//				0x75, 0x20,                    //   REPORT_SIZE (32)
-//				0x95, 0x02,                    //   REPORT_COUNT (2)
-//				0xb1, 0x02,                    //   FEATURE (Data,Var,Abs)
-//
-//				0x09, 0x04,                    //   USAGE (Vendor) data
-//				0x75, 0x40,                    //   REPORT_SIZE (64)
-//				0x95, 0x01,                    //   REPORT_COUNT (1)
-//				0xb1, 0x02,                    //   FEATURE (Data,Var,Abs)
-//
-//				0x85,HID_ID_CUSTOMCMD, //    Report ID
-//				0x09, 0x01,                    //   USAGE (Vendor)
-//				0x15, 0x00,                    //   LOGICAL_MINIMUM (0)
-//				0x26, 0x04,	0x00,			   //   Logical Maximum 4
-//				0x75, 0x08,                    //   REPORT_SIZE (8)
-//				0x95, 0x01,                    //   REPORT_COUNT (1)
-//				0x91, 0x02,                    //   OUTPUT (Data,Var,Abs)
-//
-//				0x09, 0x02,                    //   USAGE (Vendor)
-//				0x09, 0x03,                    //   USAGE (Vendor)
-//				0x75, 0x20,                    //   REPORT_SIZE (32)
-//				0x95, 0x02,                    //   REPORT_COUNT (2)
-//				0x91, 0x02,                    //   OUTPUT (Data,Var,Abs)
-//
-//				0x09, 0x04,                    //   USAGE (Vendor)
-//				0x75, 0x40,                    //   REPORT_SIZE (64)
-//				0x95, 0x01,                    //   REPORT_COUNT (1)
-//				0x91, 0x02,                    //   OUTPUT (Data,Var,Abs)
-//
-//				0x85,HID_ID_CUSTOMCMD, //    Report ID
-//				0x09, 0x01,                    //   USAGE (Vendor)
-//				0x15, 0x00,                    //   LOGICAL_MINIMUM (0)
-//				0x26, 0x04,	0x00,			   //   Logical Maximum 4
-//				0x75, 0x08,                    //   REPORT_SIZE (8)
-//				0x95, 0x01,                    //   REPORT_COUNT (1)
-//				0x81, 0x02,                    //   INPUT (Data,Var,Abs)
-//
-//				0x09, 0x02,                    //   USAGE (Vendor)
-//				0x09, 0x03,                    //   USAGE (Vendor)
-//				0x75, 0x20,                    //   REPORT_SIZE (32)
-//				0x95, 0x02,                    //   REPORT_COUNT (2)
-//				0x81, 0x02,                    //   INPUT (Data,Var,Abs)
-//
-//				0x09, 0x04,                    //   USAGE (Vendor)
-//				0x75, 0x40,                    //   REPORT_SIZE (64)
-//				0x95, 0x01,                    //   REPORT_COUNT (1)
-//				0x81, 0x02,                    //   INPUT (Data,Var,Abs)
+
 				0x85,HID_ID_HIDCMD, //    Report ID
 				0x09, 0x01,                    //   USAGE (Vendor)
 				0x15, 0x00,                    //   LOGICAL_MINIMUM (0)
@@ -178,14 +125,14 @@ __ALIGN_BEGIN const uint8_t hid_ffb_desc[USB_HID_FFB_REPORT_DESC_SIZE] __ALIGN_E
 			0xA1,0x02,        //    Collection Datalink (logical)
 			   0x85,HID_ID_STATE+FFB_ID_OFFSET,    //    Report ID 2
 
-			   0x09,0x22,    //    Usage Effect Block Index
-			   0x15,0x01,    //    Logical Minimum 1
-			   0x25,MAX_EFFECTS,    //    Logical Maximum 28h (40d)
-			   0x35,0x01,    //    Physical Minimum 1
-			   0x45,MAX_EFFECTS,    //    Physical Maximum 28h (40d)
-			   0x75,0x08,    //    Report Size 8
-			   0x95,0x01,    //    Report Count 1
-			   0x81,0x02,    //    Input (Variable)
+//			   0x09,0x22,    //    Usage Effect Block Index
+//			   0x15,0x01,    //    Logical Minimum 1
+//			   0x25,MAX_EFFECTS,    //    Logical Maximum 28h (40d)
+//			   0x35,0x01,    //    Physical Minimum 1
+//			   0x45,MAX_EFFECTS,    //    Physical Maximum 28h (40d)
+//			   0x75,0x08,    //    Report Size 8
+//			   0x95,0x01,    //    Report Count 1
+//			   0x81,0x02,    //    Input (Variable)
 
 
 
@@ -252,10 +199,10 @@ __ALIGN_BEGIN const uint8_t hid_ffb_desc[USB_HID_FFB_REPORT_DESC_SIZE] __ALIGN_E
 			 0x09, HID_USAGE_INRT,    //    Usage ET Inertia
 			 0x09, HID_USAGE_FRIC,    //    Usage ET Friction
 			// 0x09, 0x28,    //    Usage ET Custom Force Data
-			      0x25,0x0B,    //    Logical Maximum Ch (11d)
+			      0x25,0x0B,    //    Logical Maximum Bh (11d)
 			      0x15,0x01,    //    Logical Minimum 1
 			      0x35,0x01,    //    Physical Minimum 1
-			      0x45,0x0B,    //    Physical Maximum Ch (11d)
+			      0x45,0x0B,    //    Physical Maximum Bh (11d)
 			      0x75,0x08,    //    Report Size 8
 			      0x95,0x01,    //    Report Count 1
 			      0x91,0x00,    //    Output
@@ -296,24 +243,24 @@ __ALIGN_BEGIN const uint8_t hid_ffb_desc[USB_HID_FFB_REPORT_DESC_SIZE] __ALIGN_E
 			   0xA1,0x02,       //    Collection Datalink
 			      0x05,0x01,    //    Usage Page Generic Desktop
 			      0x09,0x30,    //    Usage X
-			      0x09,0x31,    //    Usage Y
+			      //0x09,0x31,    //    Usage Y
 			      0x15,0x00,    //    Logical Minimum 0
-			      0x25,0x01,    //    Logical Maximum 1
+			      0x25,0x00,    //    Logical Maximum 0
 			      0x75,0x01,    //    Report Size 1
-			      0x95,0x02,    //    Report Count 2
+			      0x95,0x01,    //    Report Count 1
 			      0x91,0x02,    //    Output (Variable)
 			   0xC0     ,    // End Collection
 			   0x05,0x0F,    //    Usage Page Physical Interface
 			   0x09,0x56,    //    Usage Direction Enable
 			   0x95,0x01,    //    Report Count 1
 			   0x91,0x02,    //    Output (Variable)
-			   0x95,0x05,    //    Report Count 5
+			   0x95,0x06,    //    Report Count 6
 			   0x91,0x03,    //    Output (Constant, Variable)
 
 			   0x09,0x57,    //    Usage Direction
 			   0xA1,0x02,    //    Collection Datalink
 			      0x0B,0x01,0x00,0x0A,0x00,    //    Usage Ordinals: Instance 1
-			      0x0B,0x02,0x00,0x0A,0x00,    //    Usage Ordinals: Instance 2
+//			      0x0B,0x02,0x00,0x0A,0x00,    //    Usage Ordinals: Instance 2
 			      0x66,0x14,0x00,              //    Unit 14h (20d)
 //			      0x55,0xFE,                   //    Unit Exponent FEh (254d)
 //			      0x15,0x00,                   //    Logical Minimum 0
@@ -324,7 +271,7 @@ __ALIGN_BEGIN const uint8_t hid_ffb_desc[USB_HID_FFB_REPORT_DESC_SIZE] __ALIGN_E
 			      0x47,0xA0,0x8C,0x00,0x00,    //    Physical Maximum 8CA0h (36000d)
 			      0x66,0x00,0x00,              //    Unit 0
 			      0x75,0x10,                   //    Report Size 16
-			      0x95,0x02,                   //    Report Count 2
+			      0x95,0x01,                   //    Report Count 1
 			      0x91,0x02,                   //    Output (Variable)
 			      0x55,0x00,                   //    Unit Exponent 0
 			      0x66,0x00,0x00,              //    Unit 0
@@ -334,10 +281,10 @@ __ALIGN_BEGIN const uint8_t hid_ffb_desc[USB_HID_FFB_REPORT_DESC_SIZE] __ALIGN_E
 			   0x09, 0x58,        //     USAGE (Type Specific Block Offset)
 			   0xA1, 0x02,        //     COLLECTION (Logical)
 			      0x0B, 0x01, 0x00, 0x0A, 0x00, //USAGE (Ordinals:Instance 1
-			      0x0B, 0x02, 0x00, 0x0A, 0x00, //USAGE (Ordinals:Instance 2)
+			      //0x0B, 0x02, 0x00, 0x0A, 0x00, //USAGE (Ordinals:Instance 2)
 			      0x26, 0xFD, 0x7F, //   LOGICAL_MAXIMUM (32765) ; 32K RAM or ROM max.
 			      0x75, 0x10,     //     REPORT_SIZE (16)
-			      0x95, 0x02,     //     REPORT_COUNT (2)
+			      0x95, 0x01,     //     REPORT_COUNT (1)
 			      0x91, 0x02,     //     OUTPUT (Data,Var,Abs)
 			   0xC0,              //     END_COLLECTION
 			0xC0,                 //     END_COLLECTION
@@ -391,15 +338,15 @@ __ALIGN_BEGIN const uint8_t hid_ffb_desc[USB_HID_FFB_REPORT_DESC_SIZE] __ALIGN_E
 			   0x25,0x03,    //    Logical Maximum 3
 			   0x35,0x00,    //    Physical Minimum 0
 			   0x45,0x03,    //    Physical Maximum 3
-			   0x75,0x04,    //    Report Size 4
+			   0x75,0x06,    //    Report Size 6
 			   0x95,0x01,    //    Report Count 1
 			   0x91,0x02,    //    Output (Variable)
 			   0x09,0x58,    //    Usage Type Specific Block Off...
 			   0xA1,0x02,    //    Collection Datalink
 			      0x0B,0x01,0x00,0x0A,0x00,    //    Usage Ordinals: Instance 1
-			      0x0B,0x02,0x00,0x0A,0x00,    //    Usage Ordinals: Instance 2
+//			      0x0B,0x02,0x00,0x0A,0x00,    //    Usage Ordinals: Instance 2
 			      0x75,0x02,                   //    Report Size 2
-			      0x95,0x02,                   //    Report Count 2
+			      0x95,0x01,                   //    Report Count 1
 			      0x91,0x02,                   //    Output (Variable)
 			   0xC0     ,         //    End Collection
 			   0x16,0x00, 0x80,    //    Logical Minimum 7FFFh (-32767d)
@@ -601,8 +548,8 @@ __ALIGN_BEGIN const uint8_t hid_ffb_desc[USB_HID_FFB_REPORT_DESC_SIZE] __ALIGN_E
 			0xA1,0x02,    //    Collection Datalink
 			   0x85,HID_ID_BLKFRREP+FFB_ID_OFFSET,    //    Report ID Bh (11d)
 			   0x09,0x22,    //    Usage Effect Block Index
-			   0x25,MAX_EFFECTS,    //    Logical Maximum 28h (40d)
 			   0x15,0x01,    //    Logical Minimum 1
+			   0x25,MAX_EFFECTS,    //    Logical Maximum 28h (40d)
 			   0x35,0x01,    //    Physical Minimum 1
 			   0x45,MAX_EFFECTS,    //    Physical Maximum 28h (40d)
 			   0x75,0x08,    //    Report Size 8
@@ -703,7 +650,7 @@ __ALIGN_BEGIN const uint8_t hid_ffb_desc[USB_HID_FFB_REPORT_DESC_SIZE] __ALIGN_E
 			   0xB1,0x00,    //    Feature
 			0xC0     ,    // End Collection
 			0x05,0x01,         //    Usage Page Generic Desktop
-			0x09,0x3B,         //    Usage Reserved
+			0x09,0x3B,         //    Usage Reserved (Byte count)
 			0x15,0x00,         //    Logical Minimum 0
 			0x26,0xFF,0x01,    //    Logical Maximum 1FFh (511d)
 			0x35,0x00,         //    Physical Minimum 0
@@ -731,15 +678,15 @@ __ALIGN_BEGIN const uint8_t hid_ffb_desc[USB_HID_FFB_REPORT_DESC_SIZE] __ALIGN_E
 			   0x09,0x8C,    //    Usage Block Load Success
 			   0x09,0x8D,    //    Usage Block Load Full
 			   0x09,0x8E,    //    Usage Block Load Error
-			   0x25,0x03,    //    Logical Maximum 3
 			   0x15,0x01,    //    Logical Minimum 1
+			   0x25,0x03,    //    Logical Maximum 3
 			   0x35,0x01,    //    Physical Minimum 1
 			   0x45,0x03,    //    Physical Maximum 3
 			   0x75,0x08,    //    Report Size 8
 			   0x95,0x01,    //    Report Count 1
 			   0xB1,0x00,    //    Feature
 			0xC0     ,                   // End Collection
-			0x09,0xAC,                   //    Usage Undefined
+			0x09,0xAC,                   //    Usage Pool available
 			0x15,0x00,                   //    Logical Minimum 0
 			0x27,0xFF,0xFF,0x00,0x00,    //    Logical Maximum FFFFh (65535d)
 			0x35,0x00,                   //    Physical Minimum 0
@@ -748,36 +695,39 @@ __ALIGN_BEGIN const uint8_t hid_ffb_desc[USB_HID_FFB_REPORT_DESC_SIZE] __ALIGN_E
 			0x95,0x01,                   //    Report Count 1
 			0xB1,0x00,                   //    Feature
 			0xC0     ,    //    End Collection
+
 			0x09,0x7F,    //    Usage PID Pool Report
 			0xA1,0x02,    //    Collection Datalink
-			0x85,HID_ID_POOLREP+FFB_ID_OFFSET,                   //    Report ID 0x13
-			0x09,0x80,                   //    Usage RAM Pool size
-			0x75,0x10,                   //    Report Size 10h (16d)
-			0x95,0x01,                   //    Report Count 1
-			0x15,0x00,                   //    Logical Minimum 0
-			0x35,0x00,                   //    Physical Minimum 0
-			0x27,0xFF,0xFF,0x00,0x00,    //    Logical Maximum FFFFh (65535d)
-			0x47,0xFF,0xFF,0x00,0x00,    //    Physical Maximum FFFFh (65535d)
-			0xB1,0x02,                   //    Feature (Variable)
-			0x09,0x83,                   //    Usage Simultaneous Effects Max
-			0x26,0xFF,0x00,              //    Logical Maximum FFh (255d)
-			0x46,0xFF,0x00,              //    Physical Maximum FFh (255d)
-			0x75,0x08,                   //    Report Size 8
-			0x95,0x01,                   //    Report Count 1
-			0xB1,0x02,                   //    Feature (Variable)
-			0x09,0xA9,                   //    Usage Device Managed Pool
-			0x09,0xAA,                   //    Usage Shared Parameter Blocks
-			0x75,0x01,                   //    Report Size 1
-			0x95,0x02,                   //    Report Count 2
-			0x15,0x00,                   //    Logical Minimum 0
-			0x25,0x01,                   //    Logical Maximum 1
-			0x35,0x00,                   //    Physical Minimum 0
-			0x45,0x01,                   //    Physical Maximum 1
-			0xB1,0x02,                   //    Feature (Variable)
-			0x75,0x06,                   //    Report Size 6
-			0x95,0x01,                   //    Report Count 1
-			0xB1,0x03,                   //    Feature (Constant, Variable)
+				0x85,HID_ID_POOLREP+FFB_ID_OFFSET,                   //    Report ID 0x13
+				0x09,0x80,                   //    Usage RAM Pool size
+				0x75,0x10,                   //    Report Size 10h (16d)
+				0x95,0x01,                   //    Report Count 1
+				0x15,0x00,                   //    Logical Minimum 0
+				0x35,0x00,                   //    Physical Minimum 0
+				0x27,0xFF,0xFF,0x00,0x00,    //    Logical Maximum FFFFh (65535d)
+				0x47,0xFF,0xFF,0x00,0x00,    //    Physical Maximum FFFFh (65535d)
+				0xB1,0x02,                   //    Feature (Variable)
+				0x09,0x83,                   //    Usage Simultaneous Effects Max
+				0x26,0xFF,0x00,              //    Logical Maximum FFh (255d)
+				0x46,0xFF,0x00,              //    Physical Maximum FFh (255d)
+				0x75,0x08,                   //    Report Size 8
+				0x95,0x01,                   //    Report Count 1
+				0xB1,0x02,                   //    Feature (Variable)
+				0x09,0xA9,                   //    Usage Device Managed Pool
+				0x09,0xAA,                   //    Usage Shared Parameter Blocks
+				0x75,0x01,                   //    Report Size 1
+				0x95,0x02,                   //    Report Count 2
+				0x15,0x00,                   //    Logical Minimum 0
+				0x25,0x01,                   //    Logical Maximum 1
+				0x35,0x00,                   //    Physical Minimum 0
+				0x45,0x01,                   //    Physical Maximum 1
+				0xB1,0x02,                   //    Feature (Variable)
+				0x75,0x06,                   //    Report Size 6
+				0x95,0x01,                   //    Report Count 1
+				0xB1,0x03,                   //    Feature (Constant, Variable)
 			0xC0, //    End Collection
 
   0xC0    /*     END_COLLECTION	             */
 };
+
+#endif

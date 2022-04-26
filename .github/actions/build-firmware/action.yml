@@ -1,0 +1,46 @@
+name: Build OpenFFBoard firmware
+
+inputs:
+  target: 
+    description: 'make target'
+    required: true
+  path: 
+    description: 'output path under ./Firmware/<path>'
+    required: true
+    default: 'Output'
+
+
+runs:
+  using: "composite"
+  # Steps represent a sequence of tasks that will be executed as part of the job
+  steps:
+    # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+    #- uses: actions/checkout@v2
+    - name: Make temp dir
+      shell: bash
+      run: mkdir -p /tmp/armtc # make temp directory
+
+    # Setup toolchain
+    - uses: actions/cache@v2
+      id: cache
+      with:
+        path: /tmp/armtc
+        key: 'gcc-arm-none-eabi-10.3-2021.10-x86_64-linux'
+
+    - name: Download toolchain
+      shell: bash
+      if: steps.cache.outputs.cache-hit != 'true'
+      run: wget -q -O /tmp/armtc/gcc-arm-none-eabi.tar.bz2 https://developer.arm.com/-/media/Files/downloads/gnu-rm/10.3-2021.10/gcc-arm-none-eabi-10.3-2021.10-x86_64-linux.tar.bz2 
+      
+    - name: Setup environment
+      shell: bash
+      run: | 
+        sudo tar xjf /tmp/armtc/gcc-arm-none-eabi.tar.bz2 -C /usr/share/
+        sudo ln -s /usr/share/gcc-arm-none-eabi-10.3-2021.10/bin/* /usr/bin/
+
+    - name: Build ${{ inputs.target }}
+      shell: bash
+      run: |
+        make -C ./Firmware clean
+        make -j16 -C ./Firmware MCU_TARGET=${{ inputs.target }} OUTPUT_DIR=${{ inputs.path }}
+

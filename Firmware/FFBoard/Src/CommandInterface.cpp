@@ -23,19 +23,13 @@ CommandInterface::~CommandInterface() {
 	removeCallbackHandler(CommandInterface::cmdInterfaces, this);
 }
 
-/**
- * A batch of commands has been executed and a reply returned
- */
-void CommandInterface::sendReplies(std::vector<CommandResult>& results,CommandInterface* originalInterface){
-
-}
 
 /**
  * Broadcasts an unrequested reply to all command interfaces
  */
-void CommandInterface::broadcastCommandReplyAsync(std::vector<CommandReply>& reply,CommandHandler* handler, uint32_t cmdId,CMDtype type){
+void CommandInterface::broadcastCommandReplyAsync(const std::vector<CommandReply>& reply,CommandHandler* handler, uint32_t cmdId,CMDtype type){
 
-	std::vector<CommandResult> results = {makeCommandReply(reply, handler, cmdId, type,nullptr)};
+	const std::vector<CommandResult> results = {makeCommandReply(reply, handler, cmdId, type,nullptr)};
 
 	for(CommandInterface* itf : CommandInterface::cmdInterfaces){
 		itf->sendReplies(results, nullptr);
@@ -50,7 +44,7 @@ void CommandInterface::sendReplyAsync(std::vector<CommandReply>& reply,CommandHa
 	this->sendReplies(results, this);
 }
 
-CommandResult CommandInterface::makeCommandReply(std::vector<CommandReply>& reply,CommandHandler* handler, uint32_t cmdId,CMDtype type,CommandInterface* originalInterface){
+CommandResult CommandInterface::makeCommandReply(const std::vector<CommandReply>& reply,CommandHandler* handler, uint32_t cmdId,CMDtype type,CommandInterface* originalInterface){
 	ParsedCommand fakeCmd;
 	fakeCmd.target = handler;
 	fakeCmd.cmdId = cmdId;
@@ -229,8 +223,9 @@ void StringCommandInterface::generateReplyFromCmd(std::string& replyPart,const P
  */
 
 
-CDC_CommandInterface::CDC_CommandInterface() : StringCommandInterface(32) {
+CDC_CommandInterface::CDC_CommandInterface() : StringCommandInterface(32), Thread("CDCCMD", 512, 37) {
 	parser.setClearBufferTimeout(parserTimeout);
+	this->Start();
 }
 
 CDC_CommandInterface::~CDC_CommandInterface() {
@@ -238,24 +233,47 @@ CDC_CommandInterface::~CDC_CommandInterface() {
 }
 
 
+void CDC_CommandInterface::Run(){
+	while(true){
+		WaitForNotification();
 
-void CDC_CommandInterface::sendReplies(std::vector<CommandResult>& results,CommandInterface* originalInterface){
+		this->sendBuffer.clear();
+		if(this->sendBuffer.capacity() > 100){
+			this->sendBuffer.reserve(64);
+		}
+		StringCommandInterface::formatReply(sendBuffer,resultsBuffer,nextFormat);
+		resultsBuffer.clear();
+		if(!sendBuffer.empty())
+			CDCcomm::cdcSend(&sendBuffer, 0);
+	}
+}
+
+
+void CDC_CommandInterface::sendReplies(const std::vector<CommandResult>& results,CommandInterface* originalInterface){
+
+	if(HAL_GetTick() - lastSendTime > parserTimeout){
+		resultsBuffer.clear(); // Empty buffer because we were not able to reply in time to prevent the full buffer from blocking future commands
+		//CDCcomm::clearRemainingBuffer(0);
+	}
+
 	if( (!enableBroadcastFromOtherInterfaces && originalInterface != this) ){
 		return;
 	}
-
-	std::string replystr;
-	replystr.reserve(100);
-	StringCommandInterface::formatReply(replystr,results, originalInterface != this && originalInterface != nullptr);
-	if(!replystr.empty())
-		CDCcomm::cdcSend(&replystr, 0);
+	lastSendTime = HAL_GetTick();
+	resultsBuffer.assign(results.begin(), results.end());
+	resultsBuffer.shrink_to_fit();
+	nextFormat = originalInterface != this && originalInterface != nullptr;
+	Notify(); // Resume
 }
 
 /**
  * Ready to send if there is no data in the backup buffer of the cdc port
  */
 bool CDC_CommandInterface::readyToSend(){
-	return CDCcomm::remainingData(0) == 0;
+	if(HAL_GetTick() - lastSendTime > parserTimeout && CDCcomm::remainingData(0) == 0){
+		return true;
+	}
+	return CDCcomm::remainingData(0) == 0 && resultsBuffer.empty();
 }
 
 
@@ -287,7 +305,7 @@ UART_CommandInterface::~UART_CommandInterface() {
 void UART_CommandInterface::Run(){
 	while(true){
 
-		cmdUartSem.Take();
+		WaitForNotification();
 		while(uartport->isTaken()){
 			Delay(1);
 		}
@@ -303,16 +321,7 @@ void UART_CommandInterface::Run(){
 }
 
 
-
-//void UART_CommandInterface::sendReplies(std::vector<CommandResult>& results,CommandInterface* originalInterface){
-//	if(!enableBroadcastFromOtherInterfaces && originalInterface != this){
-//		return;
-//	}
-//	StringCommandInterface::formatReply(sendBuffer,results, originalInterface != this && originalInterface != nullptr);
-//	cmdUartSem.Give();
-//}
-
-void UART_CommandInterface::sendReplies(std::vector<CommandResult>& results,CommandInterface* originalInterface){
+void UART_CommandInterface::sendReplies(const std::vector<CommandResult>& results,CommandInterface* originalInterface){
 	if( (!enableBroadcastFromOtherInterfaces && originalInterface != this) ){
 		return;
 	}
@@ -320,7 +329,7 @@ void UART_CommandInterface::sendReplies(std::vector<CommandResult>& results,Comm
 	resultsBuffer.assign(results.begin(), results.end());
 	resultsBuffer.shrink_to_fit();
 	nextFormat = originalInterface != this && originalInterface != nullptr;
-	cmdUartSem.Give();
+	Notify();
 }
 
 /**
@@ -335,10 +344,4 @@ void UART_CommandInterface::uartRcv(char& buf){
 	cpp_freertos::CriticalSection::ExitFromISR(savedInterruptStatus);
 }
 
-//void UART_CommandInterface::endUartTransfer(UARTPort* port){
-//
-//	port->giveSemaphore();
-//
-//}
-//
 

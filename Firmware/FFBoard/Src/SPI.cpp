@@ -85,7 +85,10 @@ void SPIPort::configurePort(SPI_InitTypeDef* config){
 }
 
 // ----------------------------------
-
+/**
+ * Transmits using DMA
+ * Warning: DMA depends on interrupts not being missed
+ */
 void SPIPort::transmit_DMA(const uint8_t* buf,uint16_t size,SPIDevice* device){
 	device->beginSpiTransfer(this);
 	current_device = device; // Will call back this device
@@ -96,6 +99,10 @@ void SPIPort::transmit_DMA(const uint8_t* buf,uint16_t size,SPIDevice* device){
 	// Request completes in tx complete callback
 }
 
+/**
+ * Transmit and receive using DMA
+ * Warning: DMA depends on interrupts not being missed
+ */
 void SPIPort::transmitReceive_DMA(const uint8_t* txbuf,uint8_t* rxbuf,uint16_t size,SPIDevice* device){
 	device->beginSpiTransfer(this);
 	if(this->allowReconfigure){
@@ -106,6 +113,10 @@ void SPIPort::transmitReceive_DMA(const uint8_t* txbuf,uint8_t* rxbuf,uint16_t s
 	// Request completes in rxtx complete callback
 }
 
+/**
+ * Receives using DMA. Not recommended
+ * Warning: DMA depends on interrupts not being missed
+ */
 void SPIPort::receive_DMA(uint8_t* buf,uint16_t size,SPIDevice* device){
 	device->beginSpiTransfer(this);
 	if(this->allowReconfigure){
@@ -113,6 +124,37 @@ void SPIPort::receive_DMA(uint8_t* buf,uint16_t size,SPIDevice* device){
 	}
 	current_device = device;
 	HAL_SPI_Receive_DMA(&this->hspi,buf,size);
+	// Request completes in rx complete callback
+}
+
+
+void SPIPort::transmit_IT(const uint8_t* buf,uint16_t size,SPIDevice* device){
+	device->beginSpiTransfer(this);
+	current_device = device; // Will call back this device
+	if(this->allowReconfigure){
+		this->configurePort(&device->getSpiConfig()->peripheral);
+	}
+	HAL_SPI_Transmit_IT(&this->hspi,const_cast<uint8_t*>(buf),size);
+	// Request completes in tx complete callback
+}
+
+void SPIPort::transmitReceive_IT(const uint8_t* txbuf,uint8_t* rxbuf,uint16_t size,SPIDevice* device){
+	device->beginSpiTransfer(this);
+	if(this->allowReconfigure){
+		this->configurePort(&device->getSpiConfig()->peripheral);
+	}
+	current_device = device; // Will call back this device
+	HAL_SPI_TransmitReceive_IT(&this->hspi,const_cast<uint8_t*>(txbuf),rxbuf,size);
+	// Request completes in rxtx complete callback
+}
+
+void SPIPort::receive_IT(uint8_t* buf,uint16_t size,SPIDevice* device){
+	device->beginSpiTransfer(this);
+	if(this->allowReconfigure){
+		this->configurePort(&device->getSpiConfig()->peripheral);
+	}
+	current_device = device;
+	HAL_SPI_Receive_IT(&this->hspi,buf,size);
 	// Request completes in rx complete callback
 }
 
@@ -146,31 +188,35 @@ void SPIPort::transmitReceive(const uint8_t* txbuf,uint8_t* rxbuf,uint16_t size,
 
 void SPIPort::takeSemaphore(){
 	bool isIsr = inIsr();
-	BaseType_t taskWoken = 0;
-	if(isIsr)
+
+	if(isIsr){
+		BaseType_t taskWoken = 0;
 		this->semaphore.TakeFromISR(&taskWoken);
-	else
+		portYIELD_FROM_ISR(taskWoken);
+	}else{
 		this->semaphore.Take();
+	}
 	isTakenFlag = true;
-	portYIELD_FROM_ISR(taskWoken);
 }
 
 void SPIPort::giveSemaphore(){
 	bool isIsr = inIsr();
-	BaseType_t taskWoken = 0;
-	if(isIsr)
-		this->semaphore.GiveFromISR(&taskWoken);
-	else
-		this->semaphore.Give();
 	isTakenFlag = false;
-	portYIELD_FROM_ISR(taskWoken);
+	if(isIsr){
+		BaseType_t taskWoken = 0;
+		this->semaphore.GiveFromISR(&taskWoken);
+		portYIELD_FROM_ISR(taskWoken);
+	}else{
+		this->semaphore.Give();
+	}
+
 }
 
 bool SPIPort::isTaken(){
 	return isTakenFlag;
 }
 
-
+// interrupt callbacks
 void SPIPort::SpiTxCplt(SPI_HandleTypeDef *hspi) {
 	if (current_device == nullptr) {
 		return;
@@ -179,8 +225,9 @@ void SPIPort::SpiTxCplt(SPI_HandleTypeDef *hspi) {
 	if (hspi->Instance != this->hspi.Instance) {
 		return;
 	}
-	current_device->spiTxCompleted(this);
 	current_device->endSpiTransfer(this);
+	current_device->spiTxCompleted(this);
+
 	current_device = nullptr;
 
 }
@@ -192,8 +239,9 @@ void SPIPort::SpiRxCplt(SPI_HandleTypeDef *hspi) {
 	if (hspi->Instance != this->hspi.Instance) {
 		return;
 	}
-	current_device->spiRxCompleted(this);
 	current_device->endSpiTransfer(this);
+	current_device->spiRxCompleted(this);
+
 	current_device = nullptr;
 }
 void SPIPort::SpiTxRxCplt(SPI_HandleTypeDef *hspi) {
@@ -204,8 +252,9 @@ void SPIPort::SpiTxRxCplt(SPI_HandleTypeDef *hspi) {
 	if (hspi->Instance != this->hspi.Instance) {
 		return;
 	}
-	current_device->spiTxRxCompleted(this);
 	current_device->endSpiTransfer(this);
+	current_device->spiTxRxCompleted(this);
+
 	current_device = nullptr;
 }
 
@@ -217,9 +266,9 @@ void SPIPort::SpiError(SPI_HandleTypeDef *hspi) {
 	if (hspi->Instance != this->hspi.Instance) {
 		return;
 	}
-
-	current_device->spiRequestError(this);
 	current_device->endSpiTransfer(this);
+	current_device->spiRequestError(this);
+
 	current_device = nullptr;
 }
 

@@ -75,7 +75,7 @@ enum class Axis_commands : uint32_t{
 	power=0x00,degrees=0x01,esgain,zeroenc,invert,idlespring,axisdamper,enctype,drvtype,pos,maxspeed,maxtorquerate,fxratio,curtorque,curpos
 };
 
-class Axis : public PersistentStorage, public CommandHandler
+class Axis : public PersistentStorage, public CommandHandler, public ErrorHandler
 {
 public:
 	Axis(char axis, volatile Control_t* control);
@@ -105,6 +105,7 @@ public:
 	void emergencyStop();
 
 	void setPos(uint16_t val);
+	void zeroPos();
 
 	bool getFfbActive();
 
@@ -117,6 +118,9 @@ public:
 
 
 	void setPower(uint16_t power);
+
+
+	void errorCallback(Error &error, bool cleared) override;
 
 	//ParseStatus command(ParsedCommand_old* cmd,std::string* reply) override;
 	void registerCommands();
@@ -153,8 +157,6 @@ private:
 	std::unique_ptr<MotorDriver> drv = std::make_unique<MotorDriver>(); // dummy
 	std::shared_ptr<Encoder> enc = nullptr;
 
-	bool tmcFeedForward = false; // Experimental
-
 	bool outOfBounds = false;
 
 	static AxisConfig decodeConfFromInt(uint16_t val);
@@ -187,11 +189,8 @@ private:
 										  .b2 = 67457,
 										  .enable = true});
 
-	int32_t torqueFFgain = 50000;
-	int32_t torqueFFconst = 0;
-	int32_t velocityFFgain = 30000;
-	int32_t velocityFFconst = 0;
 
+	float encoderOffset = 0; // Offset for absolute encoders
 	uint16_t degreesOfRotation = 900;					// How many degrees of range for the full gamepad range
 	uint16_t lastdegreesOfRotation = degreesOfRotation; // Used to store the previous value
 	uint16_t nextDegreesOfRotation = degreesOfRotation; // Buffer when changing range
@@ -225,7 +224,9 @@ private:
 	uint16_t power = 2000;
 	float torqueScaler = 0; // power * fx_ratio as a ratio between 0 & 1
 	bool invertAxis = false;
-	uint8_t endstop_gain = 127; // Sets how much extra torque per count above endstop is added. High = stiff endstop. Low = softer
+	uint8_t endstopStrength = 127; // Sets how much extra torque per count above endstop is added. High = stiff endstop. Low = softer
+	const float endstopGain = 0.75; // Overall max endstop intensity
+
 
 	uint8_t idlespringstrength = 127;
 	int16_t idlespringclip = 0;

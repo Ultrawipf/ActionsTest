@@ -10,9 +10,13 @@
 
 #include "main.h"
 // Change this to the amount of currently registered variables
-#define NB_OF_VAR	83
+#define NB_OF_VAR	96
+extern const uint16_t VirtAddVarTab[NB_OF_VAR];
 
-extern uint16_t VirtAddVarTab[NB_OF_VAR];
+// Amount of variables in exportable list
+#define NB_EXPORTABLE_ADR 82
+extern const uint16_t exportableFlashAddresses[NB_EXPORTABLE_ADR];
+
 
 /* Add your addresses here. 0xffff is invalid as it marks an erased field.
 Anything below 0x00ff is reserved for system variables.
@@ -32,6 +36,10 @@ uint16_t EE_ReadVariable(uint16_t VirtAddress, uint16_t* Data) will return 1 if 
 #define ADR_HW_VERSION 		1
 #define ADR_SW_VERSION 		2
 #define ADR_CURRENT_CONFIG 	10
+
+// Ports
+#define ADR_CANCONF1			 		0xC1
+#define ADR_I2CCONF1		 			0xC2
 
 // FFBWheel
 #define ADR_FFBWHEEL_BUTTONCONF 		0x101
@@ -65,6 +73,12 @@ uint16_t EE_ReadVariable(uint16_t VirtAddress, uint16_t* Data) will return 1 if 
 #define ADR_SHIFTERANALOG_CONF_2		0x244
 #define ADR_SHIFTERANALOG_CONF_3		0x245
 
+#define ADR_PCFBTN_CONF1				0x250
+
+#define ADR_CANBTN_CONF1				0x260
+#define ADR_CANBTN_CONF2				0x261 // CAN ID
+
+#define ADR_CANANALOG_CONF1				0x270
 
 #define ADR_CF_FILTER       			0x280 // CF Lowpass
 
@@ -82,18 +96,24 @@ uint16_t EE_ReadVariable(uint16_t VirtAddress, uint16_t* Data) will return 1 if 
 #define ADR_AXIS1_MAX_ACCEL				0x305 // Store the max accel
 #define ADR_AXIS1_ENDSTOP		    	0x307 // 0-7 endstop margin, 8-15 endstop stiffness
 #define ADR_AXIS1_EFFECTS1		    	0x308 // 0-7 idlespring, 8-15 damper
-
+//#define ADR_AXIS1_ENC_OFFSET	    	0x309
 
 // TMC1
 #define ADR_TMC1_MOTCONF 				0x320 // 0-2: MotType 3-5: PhiE source 6-15: Poles
 #define ADR_TMC1_CPR					0x321
-#define ADR_TMC1_ENCA					0x322
+#define ADR_TMC1_ENCA					0x322 // Misc
+
+#define ADR_TMC1_ADC_I0_OFS				0x323
+#define ADR_TMC1_ADC_I1_OFS				0x324
+#define ADR_TMC1_ENC_OFFSET				0x325
 
 #define ADR_TMC1_OFFSETFLUX				0x326
 #define ADR_TMC1_TORQUE_P				0x327
 #define ADR_TMC1_TORQUE_I				0x328
 #define ADR_TMC1_FLUX_P					0x329
 #define ADR_TMC1_FLUX_I					0x32A
+#define ADR_TMC1_PHIE_OFS				0x32B
+
 
 
 // AXIS2
@@ -104,18 +124,21 @@ uint16_t EE_ReadVariable(uint16_t VirtAddress, uint16_t* Data) will return 1 if 
 #define ADR_AXIS2_MAX_ACCEL				0x345 // Store the max accel
 #define ADR_AXIS2_ENDSTOP		    	0x347 // 0-7 endstop margin, 8-15 endstop stiffness
 #define ADR_AXIS2_EFFECTS1		    	0x348 // 0-7 idlespring, 8-15 damper
-
+//#define ADR_AXIS2_ENC_OFFSET	    	0x349
 
 // TMC2
 #define ADR_TMC2_MOTCONF 				0x360 // 0-2: MotType 3-5: PhiE source 6-15: Poles
 #define ADR_TMC2_CPR					0x361
 #define ADR_TMC2_ENCA					0x362
-
+#define ADR_TMC2_ADC_I0_OFS				0x363
+#define ADR_TMC2_ADC_I1_OFS				0x364
+#define ADR_TMC2_ENC_OFFSET				0x365
 #define ADR_TMC2_OFFSETFLUX				0x366
 #define ADR_TMC2_TORQUE_P				0x367
 #define ADR_TMC2_TORQUE_I				0x368
 #define ADR_TMC2_FLUX_P					0x369
 #define ADR_TMC2_FLUX_I					0x36A
+#define ADR_TMC2_PHIE_OFS				0x36B
 
 
 // AXIS3
@@ -126,18 +149,21 @@ uint16_t EE_ReadVariable(uint16_t VirtAddress, uint16_t* Data) will return 1 if 
 #define ADR_AXIS3_MAX_ACCEL				0x385 // Store the max accel
 #define ADR_AXIS3_ENDSTOP	    		0x387 // 0-7 endstop margin, 8-15 endstop stiffness
 #define ADR_AXIS3_EFFECTS1		    	0x388 // 0-7 idlespring, 8-15 damper
-
+//#define ADR_AXIS3_ENC_OFFSET	    	0x389
 
 // TMC3
 #define ADR_TMC3_MOTCONF 				0x3A0 // 0-2: MotType 3-5: PhiE source 6-15: Poles
 #define ADR_TMC3_CPR					0x3A1
 #define ADR_TMC3_ENCA					0x3A2
-
+#define ADR_TMC3_ADC_I0_OFS				0x3A3
+#define ADR_TMC3_ADC_I1_OFS				0x3A4
+#define ADR_TMC3_ENC_OFFSET				0x3A5
 #define ADR_TMC3_OFFSETFLUX				0x3A6
 #define ADR_TMC3_TORQUE_P				0x3A7
 #define ADR_TMC3_TORQUE_I				0x3A8
 #define ADR_TMC3_FLUX_P					0x3A9
 #define ADR_TMC3_FLUX_I					0x3AA
+#define ADR_TMC3_PHIE_OFS				0x3AB
 
 
 // Odrive

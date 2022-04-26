@@ -115,8 +115,11 @@ void SPI_Buttons::setConfig(ButtonSourceConfig config){
 	spiPort.takeSemaphore();
 	spiPort.configurePort(&this->spiConfig.peripheral);
 	spiPort.giveSemaphore();
-
-	mask = pow(2,config.numButtons)-1;
+	if(config.numButtons == 64){ // Special case
+			mask = 0xffffffffffffffff;
+	}else{
+		mask = (uint64_t)pow<uint64_t>(2,config.numButtons)-(uint64_t)1; // Must be done completely in 64 bit!
+	}
 	offset = 8 - (config.numButtons % 8);
 
 	// Thrustmaster uses extra bits for IDs
@@ -141,8 +144,8 @@ void SPI_Buttons::saveFlash(){
 }
 
 void SPI_Buttons::restoreFlash(){
-	uint16_t conf_int = Flash_Read(configuration_address, 0);
-	uint16_t cs_num_int = Flash_Read(configuration_address_2, 1);
+	uint16_t conf_int = Flash_ReadDefault(configuration_address, 0);
+	uint16_t cs_num_int = Flash_ReadDefault(configuration_address_2, 1);
 
 	setConfig(decodeIntToConf(conf_int, cs_num_int));
 }

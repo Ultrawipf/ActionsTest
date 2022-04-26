@@ -48,6 +48,11 @@ ErrorHandler::~ErrorHandler() {
  * Clears ALL error conditions
  */
 void ErrorHandler::clearAll(){
+	// Call all error handlers
+	for(ErrorHandler* e : errorHandlers){
+		for(Error& error : errors)
+			e->errorCallback(error, true);
+	}
 	errors.clear();
 }
 
@@ -125,7 +130,7 @@ void ErrorHandler::errorCallback(Error &error, bool cleared){
 //	return info;
 //}
 
-ErrorPrinter::ErrorPrinter() : Thread("errprint",512,19){ // Higher than default task but low.
+ErrorPrinter::ErrorPrinter() : Thread("errprint",256,19){ // Higher than default task but low.
 	this->Start();
 }
 

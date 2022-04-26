@@ -6,7 +6,6 @@
 #include "cpp_target_config.h"
 #include "cmsis_os.h"
 #include "stm32f4xx_hal_flash.h"
-#include "RessourceManager.h"
 
 #include "tusb.h"
 
@@ -30,7 +29,6 @@ ClassChooser<FFBoardMain> mainchooser(class_registry);
 StackType_t  usb_device_stack[USBD_STACK_SIZE];
 StaticTask_t usb_device_taskdef;
 
-RessourceManager ressourceManager = RessourceManager();
 
 void cppmain() {
 #ifdef FW_DEVID
@@ -49,7 +47,7 @@ void cppmain() {
 	// Flash init
 	// TODO verify why or if flash does not erase or initialize correctly on some new chips
 	HAL_FLASH_Unlock();
-	__HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_PGPERR | FLASH_FLAG_PGSERR);
+	__HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_PGPERR | FLASH_FLAG_PGSERR | FLASH_FLAG_BSY);
 
 	if( EE_Init() != EE_OK){
 		Error_Handler();

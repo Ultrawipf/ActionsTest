@@ -24,7 +24,7 @@ SystemCommands* SystemCommands::systemCommandsInstance = nullptr;
 ClassIdentifier SystemCommands::info = {
 		 .name = "System Commands" ,
 		 .id = CLSID_SYSTEM,
-		 .hidden = true
+		 .visibility = ClassVisibility::hidden
  };
 
 const ClassIdentifier SystemCommands::getInfo(){
@@ -68,10 +68,12 @@ void SystemCommands::registerCommands(){
 	CommandHandler::registerCommand("devid", FFBoardMain_commands::devid, "Get chip dev id and rev id",CMDFLAG_GET);
 }
 
+// Choose lower optimize level because the compiler likes to blow up this function
+__attribute__((optimize("-O1")))
 CommandStatus SystemCommands::internalCommand(const ParsedCommand& cmd,std::vector<CommandReply>& replies){
 	CommandStatus flag = CommandStatus::OK;
 
-	switch((FFBoardMain_commands)cmd.cmdId)
+	switch(static_cast<FFBoardMain_commands>(cmd.cmdId))
 	{
 		case FFBoardMain_commands::help:
 		{// help
@@ -84,7 +86,7 @@ CommandStatus SystemCommands::internalCommand(const ParsedCommand& cmd,std::vect
 				}
 				std::string reply =	itfHelp + "Available classes (use cls.0.help for more info):\n";
 				//std::string reply = "";
-				for(CommandHandler* handler : CommandHandler::cmdHandlers){
+				for(CommandHandler* handler : CommandHandler::getCommandHandlers()){
 					CmdHandlerInfo* info = handler->getCommandHandlerInfo();
 					reply += std::string(info->clsname) + "." + std::to_string(info->instance)+"\n";
 				}
@@ -96,7 +98,7 @@ CommandStatus SystemCommands::internalCommand(const ParsedCommand& cmd,std::vect
 		}
 
 		case FFBoardMain_commands::save:
-			for(PersistentStorage* handler : PersistentStorage::flashHandlers){
+			for(PersistentStorage* handler : PersistentStorage::getFlashHandlers()){
 				handler->saveFlash();
 			}
 			break;
@@ -109,7 +111,7 @@ CommandStatus SystemCommands::internalCommand(const ParsedCommand& cmd,std::vect
 			RebootDFU();
 			break;
 		case FFBoardMain_commands::lsmain:
-			mainchooser.replyAvailableClasses(replies);
+			mainchooser.replyAvailableClasses(replies,mainclass->getSelectionID());
 			break;
 
 		case FFBoardMain_commands::vint:
@@ -230,7 +232,7 @@ CommandStatus SystemCommands::internalCommand(const ParsedCommand& cmd,std::vect
 #endif
 		case FFBoardMain_commands::lsactive:
 		{
-			for(CommandHandler* handler : CommandHandler::cmdHandlers){
+			for(CommandHandler* handler : CommandHandler::getCommandHandlers()){
 				if(handler->hasCommands()){
 					ClassIdentifier i = handler->getInfo();
 					CmdHandlerInfo* hi = handler->getCommandHandlerInfo();
@@ -247,7 +249,11 @@ CommandStatus SystemCommands::internalCommand(const ParsedCommand& cmd,std::vect
 		case FFBoardMain_commands::format:
 			if(cmd.type == CMDtype::set && cmd.val==1){
 				HAL_FLASH_Unlock();
-				EE_Format();
+				if(EE_Format() == HAL_OK){
+					flag = CommandStatus::OK;
+				}else{
+					flag = CommandStatus::ERR;
+				}
 				HAL_FLASH_Lock();
 			}
 		break;
@@ -264,7 +270,7 @@ CommandStatus SystemCommands::internalCommand(const ParsedCommand& cmd,std::vect
  */
 void SystemCommands::replyFlashDump(std::vector<CommandReply>& replies){
 	std::vector<std::tuple<uint16_t,uint16_t>> result;
-	Flash_Dump(&result);
+	Flash_Dump(&result,false);
 
 	for(auto entry : result){
 		CommandReply reply;

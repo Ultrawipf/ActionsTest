@@ -20,7 +20,7 @@
 ClassIdentifier Axis::info = {
 	.name = "Axis",
 	.id = CLSID_AXIS, // 1
-	.hidden = false};
+	.visibility = ClassVisibility::visible};
 
 Axis::Axis(char axis,volatile Control_t* control) :CommandHandler("axis", CLSID_AXIS), drv_chooser(MotorDriver::all_drivers),enc_chooser{Encoder::all_encoders}
 {
@@ -110,7 +110,7 @@ void Axis::restoreFlash(){
 	uint16_t esval, power;
 	if(Flash_Read(flashAddrs.endstop, &esval)) {
 		fx_ratio_i = esval & 0xff;
-		endstop_gain = (esval >> 8) & 0xff;
+		endstopStrength = (esval >> 8) & 0xff;
 	}
 
 
@@ -139,7 +139,7 @@ void Axis::saveFlash(){
 //	Flash_Write(flashAddrs.maxSpeed, this->maxSpeedDegS);
 //	Flash_Write(flashAddrs.maxAccel, (uint16_t)(this->maxTorqueRateMS));
 
-	Flash_Write(flashAddrs.endstop, fx_ratio_i | (endstop_gain << 8));
+	Flash_Write(flashAddrs.endstop, fx_ratio_i | (endstopStrength << 8));
 	Flash_Write(flashAddrs.power, power);
 	Flash_Write(flashAddrs.degrees, (degreesOfRotation & 0x7fff) | (invertAxis << 15));
 	Flash_Write(flashAddrs.effects1, idlespringstrength | (damperIntensity << 8));
@@ -192,7 +192,7 @@ void Axis::prepareForUpdate(){
 	// scaledEnc now gets inverted if necessary in updateMetrics
 	int32_t scaledEnc = scaleEncValue(angle, degreesOfRotation);
 
-	if (abs(scaledEnc) > 0xffff){
+	if (abs(scaledEnc) > 0xffff && drv->motorReady()){
 		// We are way off. Shut down
 		drv->stopMotor();
 		pulseErrLed();
@@ -203,11 +203,20 @@ void Axis::prepareForUpdate(){
 
 	}else if(abs(scaledEnc) <= 0x7fff) {
 		outOfBounds = false;
+		//ErrorHandler::clearError(outOfBoundsError);
 	}
 
 	this->updateMetrics(angle);
 
 }
+
+void Axis::errorCallback(Error &error, bool cleared){
+	if(cleared && error == this->outOfBoundsError){
+		drv->startMotor();
+		outOfBounds = false;
+	}
+}
+
 
 void Axis::updateDriveTorque(){
 	// totalTorque = effectTorque + endstopTorque
@@ -280,12 +289,9 @@ void Axis::setupTMC4671()
 	tmclimits.pid_torque_flux = getPower();
 	drv->setLimits(tmclimits);
 	//drv->setBiquadFlux(fluxbq);
+	drv->setExternalEncoderAllowed(true);
 	
-	if (tmcFeedForward){
-		drv->setupFeedForwardTorque(torqueFFgain, torqueFFconst);
-		drv->setupFeedForwardVelocity(velocityFFgain, velocityFFconst);
-		drv->setFFMode(FFMode::torque);
-	}
+
 	// Enable driver
 
 	drv->setMotionMode(MotionMode::torque);
@@ -299,7 +305,6 @@ void Axis::setupTMC4671()
  */
 void Axis::setEncType(uint8_t enctype)
 {
-
 	if (enc_chooser.isValidClassId(enctype) && !drv->hasIntegratedEncoder())
 	{
 
@@ -307,6 +312,8 @@ void Axis::setEncType(uint8_t enctype)
 		this->enc = std::shared_ptr<Encoder>(enc_chooser.Create(enctype)); // Make new encoder
 		if(drv && !drv->hasIntegratedEncoder())
 			this->drv->setEncoder(this->enc);
+	}else{
+		this->conf.enctype = 0; // None encoder
 	}
 
 	float angle = getEncAngle(this->drv->getEncoder());
@@ -502,7 +509,7 @@ int16_t Axis::updateEndstop(){
 		return 0;
 	}
 	int32_t addtorque = clip<int32_t,int32_t>(abs(metric.current.pos)-0x7fff,-0x7fff,0x7fff);
-	addtorque *= (float)endstop_gain * 1.25 * torqueScaler; // Apply endstop gain for stiffness. 0.15f
+	addtorque *= (float)endstopStrength * endstopGain * torqueScaler; // Apply endstop gain for stiffness. 0.15f
 	addtorque *= -clipdir;
 
 	return clip<int32_t,int32_t>(addtorque,-0x7fff,0x7fff);
@@ -614,7 +621,7 @@ CommandStatus Axis::command(const ParsedCommand& cmd,std::vector<CommandReply>& 
 		break;
 
 	case Axis_commands::esgain:
-		handleGetSet(cmd, replies, this->endstop_gain);
+		handleGetSet(cmd, replies, this->endstopStrength);
 		break;
 
 	case Axis_commands::zeroenc:
@@ -657,7 +664,7 @@ CommandStatus Axis::command(const ParsedCommand& cmd,std::vector<CommandReply>& 
 
 	case Axis_commands::enctype:
 		if(cmd.type == CMDtype::info){
-			enc_chooser.replyAvailableClasses(replies);
+			enc_chooser.replyAvailableClasses(replies,this->getEncType());
 		}else if(cmd.type == CMDtype::get){
 			replies.push_back(CommandReply(this->getEncType()));
 		}else if(cmd.type == CMDtype::set){
@@ -667,7 +674,7 @@ CommandStatus Axis::command(const ParsedCommand& cmd,std::vector<CommandReply>& 
 
 	case Axis_commands::drvtype:
 		if(cmd.type == CMDtype::info){
-			drv_chooser.replyAvailableClasses(replies);
+			drv_chooser.replyAvailableClasses(replies,this->getDrvType());
 		}else if(cmd.type == CMDtype::get){
 			replies.push_back(CommandReply(this->getDrvType()));
 		}else if(cmd.type == CMDtype::set){

@@ -34,7 +34,7 @@ void ShifterAnalog::registerCommands(){
 
 	registerCommand("mode", ShifterAnalog_commands::mode, "Shifter mode");
 	registerCommand("x12", ShifterAnalog_commands::x12, "X-threshold for 1,2 gears");
-	registerCommand("x56", ShifterAnalog_commands::x12, "X-threshold for 5,6 gears");
+	registerCommand("x56", ShifterAnalog_commands::x56, "X-threshold for 5,6 gears");
 	registerCommand("y135", ShifterAnalog_commands::y135, "Y-threshold for 1,3,5 gears");
 	registerCommand("y246", ShifterAnalog_commands::y246, "Y-threshold for 2,4,6 gears");
 	registerCommand("revbtn", ShifterAnalog_commands::revbtn, "Pin for R signal");
@@ -162,15 +162,15 @@ void ShifterAnalog::saveFlash(){
 }
 
 void ShifterAnalog::restoreFlash(){
-	std::tie(x_chan, y_chan) = unpack(Flash_Read(ADR_SHIFTERANALOG_CONF_2, pack(x_chan, y_chan)));
-	std::tie(reverseButtonNum, cs_pin_num) = unpack(Flash_Read(ADR_SHIFTERANALOG_CONF_3, pack(reverseButtonNum, cs_pin_num)));
+	std::tie(x_chan, y_chan) = unpack(Flash_ReadDefault(ADR_SHIFTERANALOG_CONF_2, pack(x_chan, y_chan)));
+	std::tie(reverseButtonNum, cs_pin_num) = unpack(Flash_ReadDefault(ADR_SHIFTERANALOG_CONF_3, pack(reverseButtonNum, cs_pin_num)));
 
-	setMode(Flash_Read(ADR_SHIFTERANALOG_CONF, ShifterMode::G29_H));
+	setMode(Flash_ReadDefault(ADR_SHIFTERANALOG_CONF, ShifterMode::G29_H));
 
-	X_12 = Flash_Read(ADR_SHIFTERANALOG_X_12, X_12);
-	X_56 = Flash_Read(ADR_SHIFTERANALOG_X_56, X_56);
-	Y_135 = Flash_Read(ADR_SHIFTERANALOG_Y_135, Y_135);
-	Y_246 = Flash_Read(ADR_SHIFTERANALOG_Y_246, Y_246);
+	X_12 = Flash_ReadDefault(ADR_SHIFTERANALOG_X_12, X_12);
+	X_56 = Flash_ReadDefault(ADR_SHIFTERANALOG_X_56, X_56);
+	Y_135 = Flash_ReadDefault(ADR_SHIFTERANALOG_Y_135, Y_135);
+	Y_246 = Flash_ReadDefault(ADR_SHIFTERANALOG_Y_246, Y_246);
 }
 
 std::string ShifterAnalog::printModes(){

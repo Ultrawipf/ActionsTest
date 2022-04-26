@@ -49,6 +49,7 @@ private:
 	void set_ramp(FFB_SetRamp_Data_t* report);
 	void set_constant_effect(FFB_SetConstantForce_Data_t* effect);
 	void set_periodic(FFB_SetPeriodic_Data_t* report);
+	void set_effect_operation(FFB_EffOp_Data_t* report);
 
 
 	void set_filters(FFB_Effect* effect);
@@ -56,7 +57,7 @@ private:
 
 	uint32_t hid_out_period = 0; // ms since last out report for measuring update rate
 
-	uint8_t last_effect_id = 0;
+	//uint8_t last_effect_id = 0;
 	uint16_t used_effects = 0;
 	bool ffb_active = false;
 	FFB_BlockLoad_Feature_Data_t blockLoad_report;

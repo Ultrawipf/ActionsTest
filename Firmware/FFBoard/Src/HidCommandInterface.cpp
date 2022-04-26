@@ -15,7 +15,7 @@
  *
  * ******************
  */
-cpp_freertos::BinarySemaphore HID_CommandInterface::threadSem = cpp_freertos::BinarySemaphore();
+//cpp_freertos::BinarySemaphore HID_CommandInterface::threadSem = cpp_freertos::BinarySemaphore();
 
 
 HID_CommandInterface* HID_CommandInterface::globalInterface = nullptr;
@@ -38,7 +38,7 @@ bool HID_CommandInterface::getNewCommands(std::vector<ParsedCommand>& commands){
 // TODO maybe simplify and get rid of thread again if reliable
 void HID_CommandInterface::Run(){
 	while(true){
-		threadSem.Take();
+		this->WaitForNotification();
 		for(HID_CMD_Data_t& rep : outBuffer){
 			while(!tud_hid_n_ready(0)){
 				Delay(1);
@@ -52,18 +52,25 @@ void HID_CommandInterface::Run(){
 	}
 }
 
+/**
+ * true if output buffer contains data
+ */
+bool HID_CommandInterface::waitingToSend(){
+	return !this->outBuffer.empty();
+}
+
 bool HID_CommandInterface::readyToSend(){
 	return this->outBuffer.size() < maxQueuedReplies;
 }
 
-void HID_CommandInterface::sendReplies(std::vector<CommandResult>& results,CommandInterface* originalInterface){
+void HID_CommandInterface::sendReplies(const std::vector<CommandResult>& results,CommandInterface* originalInterface){
 
-	for(CommandResult& result : results){
-		std::vector<CommandReply>& replies = result.reply;
+	for(const CommandResult& result : results){
+		const std::vector<CommandReply>& replies = result.reply;
 		if(result.type == CommandStatus::NO_REPLY) // Normally not possible at this point.
 			continue;
 
-		if( (originalInterface != this && enableBroadcastFromOtherInterfaces) || ( result.type == CommandStatus::OK && replies.empty() ) ){ // Request was sent by a different interface
+		if( (originalInterface != this && enableBroadcastFromOtherInterfaces) || ( result.type == CommandStatus::OK && replies.empty() ) || (result.type == CommandStatus::ERR && replies.empty()) ){ // Request was sent by a different interface
 			if(this->outBuffer.size() > maxQueuedRepliesBroadcast){
 				continue; // for now we just throw away broadcasts if the buffer contains too many pending replies.
 			}
@@ -78,14 +85,21 @@ void HID_CommandInterface::sendReplies(std::vector<CommandResult>& results,Comma
 				reply.type = CommandReplyType::DOUBLEINTS;
 				reply.val = result.originalCommand.val;
 				reply.adr = result.originalCommand.adr;
+			}else if( (result.originalCommand.type == CMDtype::getat || result.originalCommand.type == CMDtype::get) && replies.empty()){
+				// Send an ACK if there is no actual reply
+				reply.type = CommandReplyType::ACK;
+				reply.adr =  result.originalCommand.adr;
+			}else if(result.type == CommandStatus::ERR){
+				reply.type = CommandReplyType::ERR;
 			}else{
 				continue;
 			}
 			this->queueReplyValues(reply,result.originalCommand);
+
 		}
 
 
-		for(CommandReply reply : replies){
+		for(const CommandReply reply : replies){
 			if(reply.type == CommandReplyType::STRING){
 				continue; // Ignore string only replies
 			}
@@ -93,11 +107,11 @@ void HID_CommandInterface::sendReplies(std::vector<CommandResult>& results,Comma
 			this->queueReplyValues(reply,result.originalCommand);
 		}
 	}
-	threadSem.Give();
+	this->Notify();
 }
 
 
-void HID_CommandInterface::queueReplyValues(CommandReply& reply,ParsedCommand& command){
+void HID_CommandInterface::queueReplyValues(const CommandReply& reply,const ParsedCommand& command){
 	HID_CMD_Data_t hidReply;
 	CmdHandlerInfo* info = command.target->getCommandHandlerInfo();
 	hidReply.addr = reply.adr;
@@ -120,6 +134,9 @@ void HID_CommandInterface::queueReplyValues(CommandReply& reply,ParsedCommand& c
 	case CommandReplyType::STRING_OR_INT:
 		// Return 1 int
 		hidReply.type = HidCmdType::request;
+		break;
+	case CommandReplyType::ERR:
+		hidReply.type == HidCmdType::err;
 		break;
 	default:
 		// Ignore
@@ -163,7 +180,7 @@ void HID_CommandInterface::hidCmdCallback(HID_CMD_Data_t* data){
 			data->type = HidCmdType::notFound;
 			//sendHidCmd(data); // Send back error
 			this->outBuffer.push_back(*data);
-			threadSem.Give();
+			this->Notify();
 			return;
 		}
 		if(cmd.target->isValidCommandId(cmd.cmdId, CMDFLAG_STR_ONLY))
@@ -177,7 +194,7 @@ void HID_CommandInterface::hidCmdCallback(HID_CMD_Data_t* data){
 				data->type = HidCmdType::notFound;
 				//sendHidCmd(data); // Send back error
 				this->outBuffer.push_back(*data);
-				threadSem.Give();
+				this->Notify();
 				return;
 			}
 			commands.push_back(newCmd);

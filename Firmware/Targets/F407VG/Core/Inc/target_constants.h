@@ -23,15 +23,22 @@
 
 // Main classes
 #define FFBWHEEL
+#define FFBJOYSTICK
 #define MIDI
 #define TMCDEBUG
 #define CANBRIDGE
 
+/*
+ * FFBWheel uses 2 FFB axis descriptor instead of 1 axis.
+ * Might improve compatibility with direct input but will report a 2 axis ffb compatible device
+ */
+//#define FFBWHEEL_USE_1AXIS_DESC
 
 // Extra features
 #define LOCALBUTTONS
 #define SPIBUTTONS
 #define SHIFTERBUTTONS
+#define PCF8574BUTTONS // Requires I2C
 #define ANALOGAXES
 #define TMC4671DRIVER
 #define PWMDRIVER
@@ -40,10 +47,11 @@
 #define ODRIVE
 #define VESC
 #define MTENCODERSPI // requires SPI3
+#define CANBUTTONS // Requires CAN
+#define CANANALOG // Requires CAN
 
 #define UARTCOMMANDS
 
-//#define TMCTEMP // Enable tmc temperature shutdown. replaced by hardware selection
 //----------------------
 
 
@@ -53,6 +61,7 @@
 
 #define TIM_MICROS htim10
 #define TIM_USER htim9 // Timer with full core clock speed available for the mainclass
+#define TIM_TMC htim6 // Timer running at half clock speed
 
 extern UART_HandleTypeDef huart1;
 #define UART_PORT_EXT huart1 // main uart port
@@ -62,6 +71,8 @@ extern UART_HandleTypeDef huart3;
 
 #define UART_BUF_SIZE 1 // How many bytes to expect via DMA
 
+extern I2C_HandleTypeDef hi2c1;
+#define I2C_PORT hi2c1
 
 
 

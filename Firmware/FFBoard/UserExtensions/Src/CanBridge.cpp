@@ -17,7 +17,7 @@ extern TIM_TypeDef TIM_MICROS;
 ClassIdentifier CanBridge::info = {
 		 .name = "CAN Bridge (GVRET)" ,
 		 .id=CLSID_MAIN_CAN,
-		 .hidden=false //Set false to list
+		 .visibility = ClassVisibility::visible //Set false to list
  };
 
 const ClassIdentifier CanBridge::getInfo(){
@@ -55,6 +55,8 @@ CanBridge::CanBridge() {
 	registerCommand("can", CanBridge_commands::can, "Send a frame or get last received frame");
 	registerCommand("rtr", CanBridge_commands::canrtr, "Send a RTR frame");
 	registerCommand("spd", CanBridge_commands::canspd, "Change or get CAN baud");
+
+	this->port->start();
 }
 
 CanBridge::~CanBridge() {
@@ -73,7 +75,7 @@ void CanBridge::sendMessage(uint32_t id, uint64_t msg,uint8_t len = 8,bool rtr =
 	memcpy(txBuf,&msg,8);
 	txHeader.StdId = id;
 	txHeader.DLC = len;
-	txHeader.RTR = rtr ? CAN_RTR_DATA : CAN_RTR_REMOTE;
+	txHeader.RTR = rtr ? CAN_RTR_REMOTE : CAN_RTR_DATA;
 	if(!this->port->sendMessage(&txHeader, txBuf, &this->txMailbox)){
 		pulseErrLed();
 	}
