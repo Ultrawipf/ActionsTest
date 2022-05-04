@@ -33,20 +33,16 @@ jobs:
           path: etc/usr/artifacts/
 
   
-      - name: Make temp dir
-        run: mkdir -p etc/usr/fw # make temp directory
+      # - name: Make temp dir
+      #   run: mkdir -p etc/usr/fw # make temp directory
 
-      # Move hex files
-      - name: Move firmware files
-        run: find etc/usr/artifacts/ -name '*.hex' -exec cp {} etc/usr/fw/ \;
+      # # Move hex files
+      # - name: Move firmware files
+      #   run: find etc/usr/artifacts/ -name '*.hex' -exec cp {} etc/usr/fw/ \;
 
       - name: Zip output
-        run: zip -r Firmware.zip *
-        working-directory: etc/usr/fw/
-
-      - name: Display structure of downloaded files
-        run: ls -R
-        working-directory: etc/usr/fw/
+        run: zip -r Firmware.zip OpenFFBoard-Firmware-*
+        working-directory: etc/usr/artifacts/
 
       # Create release
       - name: Release
@@ -55,4 +51,4 @@ jobs:
         with:
           body_path: ${{ github.workspace }}/CHANGELOG.txt
           body: "Release notes coming soon"
-          files: etc/usr/fw/Firmware.zip
+          files: etc/usr/artifacts/Firmware.zip
