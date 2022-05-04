@@ -2,35 +2,55 @@ name: Release OpenFFBoard firmware
 
 # Controls when the workflow will run
 on:
-  push:
-    branches: 
-      - master
-    tags:
-      - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
-  # pull_request:
-  #   branches:
-  #     - master
-  #     - development
+  release:
+    types: [created]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # Build firmware
-  jobs:
-  compliance:
-    uses: Ultrawipf/OpenFFBoard/.github/workflows/build-firmware.yml@master
+  #Make_release:
+    
+    # steps:
+    # - name: Create Release Draft
+    #     id: create_release
+    #     uses: actions/create-release@v1
+    #     env:
+    #       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    #     with:
+    #       tag_name: ${{ github.ref }}
+    #       release_name: Firmware version ${{ github.ref }}
+    #       body: "Changelog here"
+    #       draft: true # Only do a draft so we have a change to manually review
+    #                   # the release before it goes live.
+    #       prerelease: false
 
-    - name: Create Release Draft
-        id: create_release
-        uses: actions/create-release@v1
+  Build_firmware:
+  #needs: [Make_release]
+    # strategy:
+    #     fail-fast: false
+    #     matrix:
+    #       target: ['F411RE', 'F407VG'] # Targets to build
+
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v2
+      
+      #- {uses: ./.github/actions/build-firmware, with: {target: '${{ matrix.target }}', path: 'Output'}}
+      - {uses: ./.github/actions/build-firmware, with: {target: 'F411RE', path: 'Output'}}
+      - {uses: ./.github/actions/build-firmware, with: {target: 'F407VG', path: 'Output'}}
+      # Output to Firmware/Output
+
+      - uses: xresloader/upload-to-github-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ github.ref }}
-          release_name: Firmware version ${{ github.ref }}
-          body: "Changelog here"
-          draft: true # Only do a draft so we have a change to manually review
-                      # the release before it goes live.
-          prerelease: false
+          file: "./Firmware/Output/*.hex"
+          tags: true
+          draft: true
+          update_latest_release: true
