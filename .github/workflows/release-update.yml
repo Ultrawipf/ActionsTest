@@ -3,34 +3,56 @@ name: Release OpenFFBoard firmware
 # Controls when the workflow will run
 on:
   push:
-    branches: 
-      - master
     tags:
       - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
-  # pull_request:
-  #   branches:
-  #     - master
-  #     - development
+      # Branch filtering is not possible when triggerd by tags!
+
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # Build firmware
-  jobs:
-  compliance:
-    uses: Ultrawipf/OpenFFBoard/.github/workflows/build-firmware.yml@master
+  Build_firmware:
+    name: Build firmware
+    #if: github.event.base_ref == 'refs/heads/master'
+    # Call build workflow which uploads artifacts
+    uses: ./.github/workflows/build-firmware.yml
 
-    - name: Create Release Draft
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  Release:
+    needs: [Build_firmware] # Requires build first
+    name: Create release
+    runs-on: ubuntu-latest
+    #if: github.event.base_ref == 'refs/heads/master'
+    steps:
+      - uses: actions/checkout@v2
+
+      # Download artifacts for release
+      - uses: actions/download-artifact@v3
         with:
-          tag_name: ${{ github.ref }}
-          release_name: Firmware version ${{ github.ref }}
-          body: "Changelog here"
-          draft: true # Only do a draft so we have a change to manually review
-                      # the release before it goes live.
-          prerelease: false
+          path: etc/usr/artifacts/
+
+  
+      - name: Make temp dir
+        run: mkdir -p etc/usr/fw # make temp directory
+
+      # Move hex files
+      - name: Move firmware files
+        run: find etc/usr/artifacts/ -name '*.hex' -exec cp {} etc/usr/fw/ \;
+
+      - name: Zip output
+        run: zip -r Firmware.zip *
+        working-directory: etc/usr/fw/
+
+      - name: Display structure of downloaded files
+        run: ls -R
+        working-directory: etc/usr/fw/
+
+      # Create release
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          body_path: ${{ github.workspace }}/CHANGELOG.txt
+          body: "Release notes coming soon"
+          files: etc/usr/fw/Firmware.zip
