@@ -1,62 +1,43 @@
-<div align="center">
-    <a href="https://github.com/Ultrawipf/OpenFFBoard">
-        <img width="200" height="200" src="doc/img/ffboard_logo.svg">
-    </a>
-	<br>
-	<br>
-	<div style="display: flex;">
-		<a href="https://discord.gg/gHtnEcP">
-            <img src="https://img.shields.io/discord/704355326291607614">
-		</a>
-		<a href="https://github.com/Ultrawipf/OpenFFBoard/stargazers">
-            <img src="https://img.shields.io/github/stars/Ultrawipf/OpenFFBoard">
-		</a>
-		<a href="https://github.com/Ultrawipf/OpenFFBoard/actions/workflows/build-firmware.yml">
-            <img src="https://github.com/Ultrawipf/OpenFFBoard/actions/workflows/build-firmware.yml/badge.svg?branch=master">
-		</a>
-	</div>
-</div>
+# OpenFFBoard-configurator [![Build Configurator](https://github.com/Ultrawipf/OpenFFBoard-configurator/actions/workflows/build-pyinstaller.yml/badge.svg)](https://github.com/Ultrawipf/OpenFFBoard-configurator/actions/workflows/build-pyinstaller.yml)
+A simple GUI to configure the [Open FFBoard](https://github.com/Ultrawipf/OpenFFBoard) written in Python 3 with PyQt. 
+
+This allows complete configuration of all settings in the Open FFBoard firmware at runtime.
+
+Requires the latest firmware version most of the time from a matching branch.
+When errors occur hinting at missing commands make sure your firmware and configurator versions are compatible!
+
+
+Be very careful when changing motor types, drivers or the power value.
+
+Incorrect settings may cause unintended movements or damage hardware.
 
 
 
-# Open FFBoard
-The Open FFBoard is an open source force feedback interface with the goal of creating a platform for highly compatible simulation devices.
-
-This firmware is optimized for the Open FFBoard.
-At the moment the software is far from finished. Features may not work completely or contain errors.
-
-More documentation about this project is on the [hackaday.io page](https://hackaday.io/project/163904-open-ffboard).
-
-The hardware designs are found under [OpenFFBoard-hardware](https://github.com/Ultrawipf/OpenFFBoard-hardware).
-
-The GUI for configuration is found at [OpenFFBoard-configurator](https://github.com/Ultrawipf/OpenFFBoard-configurator).
-
-These git submodules can be pulled with `git submodule init` and `git submodule update`
-
-Updates often require matching firmware and GUI versions!
-
-## Documentation
-Documentation will be added in the [GitHub Wiki](https://github.com/Ultrawipf/OpenFFBoard/wiki).
-
-Available commands are listed on the [Commands wiki page](https://github.com/Ultrawipf/OpenFFBoard/wiki/Commands)
-
-Code summary and documentation of the latest stable version is available as a [Doxygen site](https://ultrawipf.github.io/OpenFFBoard/doxygen/).
-
-For discussion and progress updates we have a [Discord server](https://discord.com/invite/gHtnEcP).
-
-### Extensions
-The modular structure means you are free to implement your own main classes.
-Take a look into the FFBoardMain and ExampleMain class files in the UserExtensions folder.
-Helper functions for parsing CDC commands and accessing the flash are included.
-
-The firmware is class based in a way that for example the whole main class can be changed at runtime and with it for example even the usb device and complete behavior of the firmware.
-
-For FFB the motor drivers, button sources or encoders also have their own interfaces.
-
-A unified command system supporting different interfaces is available and recommended for setting parameters at runtime. (see `CommandHandler.h` and the example mainclass)
+![FFB Window](screenshots/FFBwheel.png?raw=true)
 
 
-### Copyright notice:
-Some parts of this software may contain source code by ST.
-The license applying to these files is found in the header of the file.
-For all other parts the LICENSE file applies.
+![Axis Window](screenshots/Axispage.png?raw=true)
+
+
+![TMC Window](screenshots/TMC.png?raw=true)
+
+
+### Installation:
+On older windows versions (older than Windows 10) CDC drivers may not load automatically.
+
+Then you need to manually install for example the STM VCP driver for the device.
+
+For DFU on windows a libusb compatible driver is required. Use [Zadig](http://zadig.akeo.ie/) to install a winusb driver for the DFU device or install the STM32CubeProgrammer which uses the same driver and can flash the device as well.
+
+#### Dependencies:
+
+PyQt6
+PyQt6-Charts (For TMC graph)
+pyusb and libusb-1.0.dll for DFU
+intelhex for uploading hex files
+
+Install dependencies with `pip install -r requirements.txt` and run `python main.py` to start the application.
+
+A fully executable windows version can be built using pyinstaller and the `build/build.bat` script.
+
+Additionally an automatic build script will create a build artifact for commits on the master branch.
