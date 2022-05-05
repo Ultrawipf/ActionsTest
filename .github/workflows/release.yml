@@ -19,8 +19,33 @@ jobs:
     # Call build workflow which uploads artifacts
     uses: ./.github/workflows/build-firmware.yml
 
+  Build_configurator:
+    # The type of runner that the job will run on
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ['windows-latest', 'macos-latest']
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v2
+
+      - id: build
+        uses: Configurator/.github/actions/build-pyinstaller
+        with: 
+          path: '${{ github.workspace }}/Configurator'
+        
+      - uses: actions/upload-artifact@v2
+        with:
+          name: OpenFFBoard-Configurator-${{ matrix.os }}
+          path: ${{ steps.build.outputs.distpath }}
+
+
+
   Release:
-    needs: [Build_firmware] # Requires build first
+    needs: [Build_firmware,Build_configurator] # Requires build first
     name: Create release
     runs-on: ubuntu-latest
     #if: github.event.base_ref == 'refs/heads/master'
@@ -40,15 +65,22 @@ jobs:
       # - name: Move firmware files
       #   run: find etc/usr/artifacts/ -name '*.hex' -exec cp {} etc/usr/fw/ \;
 
-      - name: Zip output
-        run: zip -r Firmware.zip OpenFFBoard-Firmware-*
+      - name: Zip firmware
+        run: zip -qq -r Firmware.zip OpenFFBoard-Firmware-*
         working-directory: etc/usr/artifacts/
+
+      - name: Zip configurator
+        run: |
+          for i in OpenFFBoard-Configurator-*/; do zip -qq -r "${i%/}.zip" "$i"; done
+        working-directory: etc/usr/configurator/
 
       # Create release
       - name: Release
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
         with:
+          name: "OpenFFBoard ${{github.ref_name}}"
           body_path: ${{ github.workspace }}/CHANGELOG.txt
           body: "Release notes coming soon"
-          files: etc/usr/artifacts/Firmware.zip
+          files: etc/usr/artifacts/*.zip
+          prerelease: ${{contains(github.ref_name, '-')}}
