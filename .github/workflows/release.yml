@@ -19,8 +19,21 @@ jobs:
     # Call build workflow which uploads artifacts
     uses: ./.github/workflows/build-firmware.yml
 
+  Build_configurator:
+    name: Build configurator
+    runs-on: ubuntu-latest
+    steps:
+
+      - uses: actions/checkout@v2
+      - name: "Get submodule"
+        run: git submodule update --init Configurator
+      - name: "Show submodule"
+        run: ls -al ./Configurator
+      - uses: ./Configurator/.github/workflows/build-pyinstaller.yml
+
+
   Release:
-    needs: [Build_firmware] # Requires build first
+    needs: [Build_firmware,Build_configurator] # Requires build first
     name: Create release
     runs-on: ubuntu-latest
     #if: github.event.base_ref == 'refs/heads/master'
@@ -49,6 +62,8 @@ jobs:
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
         with:
+          name: "OpenFFBoard ${{github.ref_name}}"
           body_path: ${{ github.workspace }}/CHANGELOG.txt
           body: "Release notes coming soon"
           files: etc/usr/artifacts/Firmware.zip
+          prerelease: ${{contains(github.ref_name, '-')}}
